@@ -5,6 +5,7 @@ import type { Session } from '@deepseek-ai/dsh-session'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { HandoffConfig } from '../src/config.ts'
 import { HandoffError } from '../src/errors.ts'
+import { renderLatestPointer } from '../src/markdown.ts'
 import { frameForInjection, loadHandoffForResume } from '../src/resume.ts'
 import { writeDocument } from '../src/store.ts'
 
@@ -41,7 +42,7 @@ async function workspace(): Promise<{ cwd: string; dir: string }> {
 }
 
 describe('loadHandoffForResume', () => {
-  it('prefers latest.md', async () => {
+  it('treats a legacy full-copy latest.md as the document itself', async () => {
     const { cwd, dir } = await workspace()
     await writeDocument(dir, 'old.md', 'old body')
     await writeDocument(dir, 'latest.md', 'latest body')
@@ -49,6 +50,25 @@ describe('loadHandoffForResume', () => {
     expect(resumed.name).toBe('latest.md')
     expect(resumed.content).toBe('latest body')
     expect(resumed.truncated).toBe(false)
+  })
+
+  it('follows the latest pointer to the real document', async () => {
+    const { cwd, dir } = await workspace()
+    await writeDocument(dir, 'handoff-20261026-085833-x.md', 'newest body')
+    await writeDocument(
+      dir,
+      'latest.md',
+      renderLatestPointer({ name: 'handoff-20261026-085833-x.md', version: 4, updatedAt: '2026-10-26T08:58:33+08:00' }),
+    )
+    const resumed = await loadHandoffForResume(await sessionIn(cwd), config, '')
+    expect(resumed.name).toBe('handoff-20261026-085833-x.md')
+    expect(resumed.content).toBe('newest body')
+  })
+
+  it('reports a pointer whose target is gone', async () => {
+    const { cwd, dir } = await workspace()
+    await writeDocument(dir, 'latest.md', renderLatestPointer({ name: 'missing.md', version: 2, updatedAt: '2026-10-26T08:58:33+08:00' }))
+    await expect(loadHandoffForResume(await sessionIn(cwd), config, '')).rejects.toThrowError(/BROKEN_POINTER|不存在/u)
   })
 
   it('falls back to the newest timestamped document when there is no latest.md', async () => {

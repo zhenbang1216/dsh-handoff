@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { HandoffConfig as ConfigShape } from '../src/config.ts'
 import { HandoffError } from '../src/errors.ts'
 import { generateHandoff, resolveRoute } from '../src/generate.ts'
+import { parseLatestPointer } from '../src/markdown.ts'
 
 const created: string[] = []
 
@@ -107,11 +108,16 @@ describe('generateHandoff', () => {
 
     const written = await readFile(result.path, 'utf8')
     expect(written).toContain('session: session-test')
+    expect(written).toContain('version: 1')
     expect(written).toContain('# 交接文档 · 修复登录 bug')
     expect(written).toContain('## 任务')
+    expect(result.version).toBe(1)
 
+    // latest.md is a pointer now, not a duplicate of the document.
     const latest = await readFile(join(cwd, '.dsh', 'handoff', 'latest.md'), 'utf8')
-    expect(latest).toBe(written)
+    expect(latest).toContain('kind: latest-pointer')
+    expect(parseLatestPointer(latest)).toBe(result.relativePath.split('/').pop())
+    expect(latest).not.toContain('## 任务')
 
     const request = captured[0]
     expect(request?.provider).toBe('deepseek-account')

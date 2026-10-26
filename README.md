@@ -58,8 +58,9 @@ dsh plugin --profile desktop add dsh-handoff
 
 ```text
 <工作目录>/.dsh/handoff/
-├─ handoff-20261025-214005-重构登录模块.md   # 每次生成一份，按时间排序
-└─ latest.md                                  # 最新一份，给下一个会话读
+├─ handoff-20261025-214005-重构登录模块.md   # v1，每次生成一份，按时间排序
+├─ handoff-20261026-085833-补测试.md         # v2，头部记着 previous 指向 v1
+└─ latest.md                                 # 指针：写明最新是哪一份，不是副本
 ```
 
 文档结构（由提示词约束，模型逐节填写）：
@@ -75,7 +76,35 @@ dsh plugin --profile desktop add dsh-handoff
 | 关键文件与命令 | 接手的人该先看哪几个文件、跑哪几条命令 |
 | 给下一个会话的开场白 | 可直接粘贴的一段话 |
 
-文件头带 YAML front matter（会话 id、工作目录、时间、provider/model、消息数），方便后续工具索引。
+### 版本与时间
+
+每份文档的头信息（YAML front matter）和标题下那一行都会写明版本与新鲜度：
+
+```yaml
+created: "2026-10-26T08:58:33+08:00"      # 生成时间
+updated: "2026-10-26T08:58:33+08:00"      # 最后写入时间（人工改过就跟着变）
+version: 2                                  # 同一个输出目录里的第几份，从 1 开始
+session-activity: "2026-10-26T08:57:12+08:00"  # 这份文档反映的对话最后活动时间
+previous: "handoff-20261026-085801-….md"   # 上一份，形成链条
+generator: dsh-handoff@0.2.0
+```
+
+```markdown
+> v2 · 生成于 2026-10-26 08:58:33 +08:00 · 会话最后活动 2026-10-26 08:57:12 +08:00 · 上一份 `handoff-20261026-085801-….md`
+```
+
+`latest.md` 是一行指针而不是副本：
+
+```markdown
+---
+kind: latest-pointer
+latest: "handoff-20261026-085833-补测试.md"
+version: 2
+updated: "2026-10-26T08:58:33+08:00"
+---
+```
+
+所以「哪份最新」有两个等价答案：看 `latest.md` 指向谁，或按文件名里的时间戳取最大。侧边栏列表里最新那份还带一个 **最新** 徽标。`/handoff resume` 会自动跟随指针；旧版本留下的「副本式 latest.md」也能正确识别。
 
 ## 界面
 

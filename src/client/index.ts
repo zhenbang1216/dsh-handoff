@@ -84,6 +84,16 @@ const S: Record<string, CSSProperties> = {
   item: { textAlign: 'left', padding: '8px 10px', borderRadius: 8, border, background: 'transparent', color: 'inherit', cursor: 'pointer' },
   itemActive: { textAlign: 'left', padding: '8px 10px', borderRadius: 8, border, background: soft, color: 'inherit', cursor: 'pointer' },
   itemName: { fontSize: 12, wordBreak: 'break-all' },
+  badge: {
+    display: 'inline-block',
+    marginRight: 6,
+    padding: '0 5px',
+    borderRadius: 4,
+    border,
+    fontSize: 10,
+    opacity: 0.75,
+    verticalAlign: 'middle',
+  },
   itemMeta: { fontSize: 11, opacity: 0.55, marginTop: 3 },
   preview: { flex: 1, minWidth: 0, border, borderRadius: 10, overflow: 'auto', padding: 14, background: soft },
   pre: { margin: 0, fontSize: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' },
@@ -244,7 +254,7 @@ function Page() {
         h('div', { style: S.listTitle }, `历史文档（${docs.length}）`),
         docs.length === 0
           ? h('div', { style: S.empty }, '还没有文档。点右上角生成第一份。')
-          : docs.map((doc) =>
+          : docs.map((doc, index) =>
               h(
                 'button',
                 {
@@ -253,7 +263,12 @@ function Page() {
                   title: doc.name,
                   onClick: () => void openDoc(doc.name),
                 },
-                h('div', { style: S.itemName }, doc.name),
+                h(
+                  'div',
+                  { style: S.itemName },
+                  index === 0 ? h('span', { style: S.badge }, '最新') : null,
+                  doc.name,
+                ),
                 h('div', { style: S.itemMeta }, `${new Date(doc.modifiedAt).toLocaleString()} · ${Math.max(1, Math.round(doc.size / 1024))} KB`),
               ),
             ),

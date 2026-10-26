@@ -4,10 +4,11 @@ import type { Session } from '@deepseek-ai/dsh-session'
 import { relative } from 'node:path'
 import type { HandoffConfig } from './config.ts'
 import { HandoffError } from './errors.ts'
-import { documentFileName, localTimestamp, normalizeBody, renderDocument, slugify } from './markdown.ts'
+import { documentFileName, localTimestamp, normalizeBody, parseDocumentVersion, renderDocument, renderLatestPointer, slugify } from './markdown.ts'
 import { buildPrompt } from './prompt.ts'
-import { resolveOutputDir, writeDocument } from './store.ts'
+import { listDocuments, readDocument, resolveOutputDir, writeDocument } from './store.ts'
 import { buildTranscript, dominantLanguage, firstUserLine, type TranscriptStats } from './transcript.ts'
+import { PLUGIN_VERSION } from './version.ts'
 
 /** One resolved provider/model route. */
 export interface Route {
@@ -34,12 +35,41 @@ export interface GenerateResult {
   readonly relativePath: string
   readonly markdown: string
   readonly route: Route
+  /** 1-based position of this document in the handoff chain. */
+  readonly version: number
   readonly stats: TranscriptStats
   readonly usage?: TokenUsage
 }
 
 /** Generator identity recorded in every document. */
-const GENERATOR = 'dsh-handoff'
+const GENERATOR = `dsh-handoff@${PLUGIN_VERSION}`
+
+/** Next version number and the document it supersedes, from the output directory. */
+async function nextVersion(dir: string): Promise<{ version: number; previous?: string }> {
+  const docs = await listDocuments(dir)
+  const previous = docs[0]
+  if (previous === undefined) return { version: 1 }
+  let version = docs.length + 1
+  try {
+    const parsed = parseDocumentVersion(await readDocument(dir, previous.name))
+    if (parsed !== undefined) version = parsed + 1
+  } catch {
+    // An unreadable previous file must not block a new generation.
+  }
+  return { version, previous: previous.name }
+}
+
+/** When the session last did anything; falls back to the generation instant. */
+function sessionActivity(session: Session, fallback: Date): Date {
+  try {
+    const events = session.snapshotEvents()
+    const time = events[events.length - 1]?.time
+    if (typeof time === 'number' && Number.isFinite(time)) return new Date(time)
+  } catch {
+    // Older logs or a detached session: the generation time is close enough.
+  }
+  return fallback
+}
 
 /**
  * Pick the route for the auxiliary call.
@@ -150,12 +180,20 @@ export async function generateHandoff(input: GenerateInput): Promise<GenerateRes
   const body = normalizeBody(text)
   if (body === '') throw new HandoffError('EMPTY_DOCUMENT', '模型返回了空文档。')
 
+  const dir = resolveOutputDir(cwd, config.outputDir)
+  const chain = await nextVersion(dir)
+  const activity = sessionActivity(session, now)
+
   const markdown = renderDocument(
     {
       title,
       sessionId: String(session.id),
       cwd,
       createdAt,
+      updatedAt: createdAt,
+      version: chain.version,
+      ...(chain.previous === undefined ? {} : { previous: chain.previous }),
+      sessionActivityAt: localTimestamp(activity),
       provider: route.provider,
       model: route.model,
       messages: messages.length,
@@ -165,16 +203,19 @@ export async function generateHandoff(input: GenerateInput): Promise<GenerateRes
     body,
   )
 
-  const dir = resolveOutputDir(cwd, config.outputDir)
   const fileName = documentFileName(config.filenamePrefix, now, slugify(input.focus === '' ? title : input.focus))
   const path = await writeDocument(dir, fileName, markdown)
-  if (config.writeLatest) await writeDocument(dir, 'latest.md', markdown)
+  if (config.writeLatest) {
+    const pointer = renderLatestPointer({ name: fileName, version: chain.version, updatedAt: createdAt })
+    await writeDocument(dir, 'latest.md', pointer)
+  }
 
   return {
     path,
     relativePath: relative(cwd, path).split('\\').join('/'),
     markdown,
     route,
+    version: chain.version,
     stats: transcript.stats,
     ...(usage === undefined ? {} : { usage }),
   }

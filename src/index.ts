@@ -57,6 +57,7 @@ function createTool(ctx: Context, config: HandoffConfig) {
         additionalProperties: false,
         properties: {
           path: { type: 'string', required: true },
+          version: { type: 'integer', required: true },
           messages: { type: 'integer', required: true },
           chars: { type: 'integer', required: true },
           model: { type: 'string', required: true },
@@ -69,7 +70,7 @@ function createTool(ctx: Context, config: HandoffConfig) {
         return [
           {
             type: 'text',
-            text: `交接文档已写入 ${value.path}（${value.messages} 条消息，${value.chars} 字符记录${truncated}，模型 ${value.model}）。\n\n预览：${value.preview}`,
+            text: `交接文档已写入 ${value.path}（v${value.version}，${value.messages} 条消息，${value.chars} 字符记录${truncated}，模型 ${value.model}）。\n\n预览：${value.preview}`,
           },
         ]
       },
@@ -86,6 +87,7 @@ function createTool(ctx: Context, config: HandoffConfig) {
       })
       return {
         path: result.relativePath,
+        version: result.version,
         messages: result.stats.messages,
         chars: result.stats.chars,
         model: `${result.route.provider}/${result.route.model}`,
@@ -152,7 +154,7 @@ export function apply(ctx: Context, config: HandoffConfig): void {
               })
               const parts = [
                 `交接文档已生成：${result.relativePath}`,
-                `（${result.stats.messages} 条消息，${result.stats.chars} 字符记录，模型 ${result.route.provider}/${result.route.model}）`,
+                `（v${result.version}，${result.stats.messages} 条消息，${result.stats.chars} 字符记录，模型 ${result.route.provider}/${result.route.model}）`,
               ]
               if (result.stats.truncated) parts.push('，会话中段因超出预算已省略')
               return { kind: 'success', text: parts.join('') } as const

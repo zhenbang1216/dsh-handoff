@@ -150,6 +150,7 @@ export function mountRoutes(ctx: Context, config: HandoffConfig): void {
         const result = await generateHandoff({ ctx: scoped, session, config, focus })
         return ok({
           path: result.relativePath,
+          version: result.version,
           messages: result.stats.messages,
           chars: result.stats.chars,
           model: `${result.route.provider}/${result.route.model}`,

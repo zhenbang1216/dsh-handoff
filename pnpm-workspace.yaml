@@ -1,0 +1,7 @@
+packages:
+  - .
+
+# Flat, npm-like node_modules. The Harness profile uses the same layout because
+# bundled CLIs resolve bare specifiers from their own directory and do not
+# follow pnpm's symlinked store.
+nodeLinker: hoisted

@@ -1,0 +1,5 @@
+# Bundle patch layer: loading this package as a bundle adds its plugin row.
+# The `id` is stable so `cordis.patch.yml` overrides in a profile can target it.
+- insert:
+    - id: dsh-handoff
+      name: dsh-handoff

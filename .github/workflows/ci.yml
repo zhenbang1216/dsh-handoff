@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm integration
+      - name: Verify the built halves exist
+        run: |
+          test -f lib/index.js
+          test -f lib/client.js
+          head -c 40 lib/client.js | grep -q '__ModuleLoader__'
+      - name: Fail when the committed build is stale
+        run: git diff --exit-code -- lib

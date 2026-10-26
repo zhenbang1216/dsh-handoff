@@ -1,0 +1,91 @@
+{
+  "name": "dsh-handoff",
+  "version": "0.2.0",
+  "description": "Handoff documents for DeepSeek Harness: turn the current session into a markdown brief that tells the next conversation what the task was, what is done, what is next, and which traps to avoid.",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhenbang1216/dsh-handoff.git"
+  },
+  "homepage": "https://github.com/zhenbang1216/dsh-handoff",
+  "bugs": {
+    "url": "https://github.com/zhenbang1216/dsh-handoff/issues"
+  },
+  "author": "zhenbang1216",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/index.d.ts",
+    "lib/client.js",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0",
+    "dsh": ">=0.2.1-rc.2"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --pool=threads",
+    "integration": "node --expose-internals scripts/integration.mjs",
+    "check:install": "node scripts/check-install.mjs",
+    "dev": "tsdown --watch",
+    "prepublishOnly": "pnpm build && pnpm test"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/dsh-commands": ">=0.2.1-rc.2",
+    "@deepseek-ai/dsh-llm": ">=0.2.1-rc.2",
+    "@deepseek-ai/dsh-session": ">=0.2.1-rc.2",
+    "@deepseek-ai/dsh-tools": ">=0.2.1-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.2"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-commands": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-llm": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-session": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.3",
+    "@deepseek-ai/schemastery": "3.18.5",
+    "@types/node": "^24.0.0",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsdown": "^0.23.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "plugin",
+    "handoff",
+    "context"
+  ],
+  "license": "MIT"
+}

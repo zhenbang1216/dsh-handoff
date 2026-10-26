@@ -1,0 +1,11 @@
+node_modules/
+*.log
+*.tsbuildinfo
+.dev-home/
+.vitest/
+.DS_Store
+Thumbs.db
+
+# lib/ IS committed: the plugin is installed straight from this repository
+# (`dsh plugin add git+https://…`), so the built halves must ride along.
+# Rebuild with `pnpm build`; CI fails when the committed output is stale.

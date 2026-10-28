@@ -133,8 +133,9 @@ describe('plugin HTTP routes', () => {
     const docs = await call('/api/dsh-handoff/docs?sessionId=session-1')
     expect(docs.ok).toBe(true)
     expect(docs.value.docs).toHaveLength(1)
-
+    // writeLatest is on, so the pointer names exactly the generated document.
     const name = docs.value.docs[0].name as string
+    expect(docs.value.latest).toBe(name)
     const doc = await call(`/api/dsh-handoff/doc?sessionId=session-1&name=${encodeURIComponent(name)}`)
     expect(doc.ok).toBe(true)
     expect(doc.value.content).toContain('# 交接文档')

@@ -1,6 +1,6 @@
 {
   "name": "dsh-handoff",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Handoff documents for DeepSeek Harness: turn the current session into a markdown brief that tells the next conversation what the task was, what is done, what is next, and which traps to avoid.",
   "type": "module",
   "main": "lib/index.js",

@@ -86,7 +86,7 @@ updated: "2026-10-26T08:58:33+08:00"      # 最后写入时间（人工改过就
 version: 2                                  # 同一个输出目录里的第几份，从 1 开始
 session-activity: "2026-10-26T08:57:12+08:00"  # 这份文档反映的对话最后活动时间
 previous: "handoff-20261026-085801-….md"   # 上一份，形成链条
-generator: dsh-handoff@0.2.0
+generator: dsh-handoff@0.3.0
 ```
 
 ```markdown
@@ -110,12 +110,15 @@ updated: "2026-10-26T08:58:33+08:00"
 
 侧边栏里有一行 **交接文档**，点开就是整页：
 
-- 顶部选会话（当前进程里活着的会话，按消息数排序展示标题），填一个关注点，点「生成交接文档」；
-- 左栏是该会话目录下的历史文档，按时间倒序，显示大小与修改时间；
-- 右侧是选中文档的全文预览；
+- 顶部一条操作线：选会话（当前进程里活着的会话，按消息数排序展示标题）、填关注点、点「生成交接文档」；
+- 左栏是该会话目录下的历史文档，按时间倒序；文件名解析成「标题 · 日期 · 大小」（如 `补测试 · 10-26 08:58 · 2 KB`），带刷新按钮；
+- **最新** 徽标以 `latest.md` 指针为准——手动编辑旧文档改变修改时间，也不会抢走徽标；
+- 右侧是选中文档的 **markdown 渲染预览**（标题、代码块、列表、引用、行内代码与加粗），front matter 收进可折叠的「文档信息」面板；
+- 预览头部一键 **复制全文** 或 **复制开场白**（自动提取「给下一个会话的开场白」小节，交接时直接粘贴）；
+- 状态反馈分色：成功绿、失败红，生成中有加载指示；
 - 插件页的 `dsh-handoff` 卡片显示这次运行实际使用的配置值。
 
-页面通过插件自己的只读 HTTP 接口拿数据（`/dsh-handoff/api/*`），走浏览器同源 Cookie，和其它 Host 请求一样受鉴权保护。
+页面通过插件自己的只读 HTTP 接口拿数据（`/dsh-handoff/api/*`），走浏览器同源 Cookie，和其它 Host 请求一样受鉴权保护。视觉自适应宿主明暗主题。
 
 ## 设置
 
@@ -150,12 +153,12 @@ updated: "2026-10-26T08:58:33+08:00"
 |---|---|
 | 宿主工具 | 在真实会话里调用 `handoff`，由 `deepseek-account/deepseek-flash` 写出文档并落到 `.dsh/handoff/` |
 | HTTP 接口 | `/api/dsh-handoff/{sessions,docs,doc,config,generate}` 全部 200；`generate` 返回新文档路径与统计 |
-| 侧边栏面板 | 「交接文档」一行渲染成功（截图确认），列表与预览走上述接口 |
+| 侧边栏面板 | 「交接文档」一行渲染成功（截图确认），列表与 markdown 渲染预览走上述接口；预览渲染器有专项回归测试 |
 | 客户端包 | 现场 boot graph 含 `dsh-handoff` 条目，bundle 由宿主提供且为本机构建 |
 | 斜杠命令 | `/handoff` 注册成功，已实际生成过文档 |
 | 安装 | `pnpm check:install` 全绿（依赖、bundle、两个产物、`dsh.client` 形态） |
 
-自动化：`pnpm typecheck`、`pnpm test`（70 项）、`pnpm integration`（真实 Cordis 服务，含生成与接续）。
+自动化：`pnpm typecheck`、`pnpm test`（83 项）、`pnpm integration`（真实 Cordis 服务，含生成与接续）。
 
 ## 排查
 
@@ -187,14 +190,18 @@ pnpm integration  # 在真实 Cordis 里挂真 SessionStore/CommandRuntime，跑
 
 ```text
 src/
-├─ index.ts       # 插件入口：注册工具与 /handoff 命令
-├─ config.ts      # schemastery 配置（自动生成设置表单）
-├─ generate.ts    # 路由解析 → 提示词 → 流式调用 → 落盘
-├─ transcript.ts  # 会话消息 → 带预算的紧凑记录
-├─ prompt.ts      # 系统提示词与小节契约（中/英）
-├─ markdown.ts    # front matter、正文清洗、文件名
-├─ store.ts       # 目录解析与文件读写
-└─ errors.ts      # 稳定错误码
+├─ index.ts        # 插件入口：注册工具与 /handoff 命令
+├─ client/index.ts # 浏览器半身：侧边栏页面、markdown 预览渲染、配置卡片
+├─ config.ts       # schemastery 配置（自动生成设置表单）
+├─ generate.ts     # 路由解析 → 提示词 → 流式调用 → 落盘
+├─ transcript.ts   # 会话消息 → 带预算的紧凑记录
+├─ prompt.ts       # 系统提示词与小节契约（中/英）
+├─ markdown.ts     # front matter、正文清洗、文件名
+├─ store.ts        # 目录解析与文件读写
+├─ routes.ts       # 面板的只读 HTTP 接口
+├─ resume.ts       # /handoff resume：加载文档并注入新会话
+├─ errors.ts       # 稳定错误码
+└─ version.ts      # 包版本号，与 package.json 互校
 ```
 
 ## 路线图

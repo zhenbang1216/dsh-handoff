@@ -60,7 +60,14 @@ export async function listDocuments(dir: string, limit = 50): Promise<DocumentEn
   for (const name of names) {
     if (!name.endsWith('.md') || name === 'latest.md') continue
     const path = join(dir, name)
-    const info = await stat(path)
+    // One unreadable entry (a race with deletion, a broken link) must not
+    // take the whole listing down.
+    let info: Awaited<ReturnType<typeof stat>>
+    try {
+      info = await stat(path)
+    } catch {
+      continue
+    }
     if (!info.isFile()) continue
     entries.push({ name, path, size: info.size, modifiedAt: info.mtimeMs })
   }

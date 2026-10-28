@@ -3,6 +3,7 @@ import type { Session } from '@deepseek-ai/dsh-session'
 import type { HandoffConfig } from './config.ts'
 import { HandoffError } from './errors.ts'
 import { generateHandoff } from './generate.ts'
+import { parseLatestPointer } from './markdown.ts'
 import { listDocuments, readDocument, resolveOutputDir } from './store.ts'
 import { firstUserLine } from './transcript.ts'
 
@@ -124,7 +125,16 @@ export function mountRoutes(ctx: Context, config: HandoffConfig): void {
         const url = new URL(request.url)
         const session = sessionOf(url.searchParams.get('sessionId') ?? '')
         const dir = outputDirOf(session)
-        return ok({ dir, docs: await listDocuments(dir) })
+        const docs = await listDocuments(dir)
+        // The pointer, not the mtime, decides which document is newest: a
+        // manually edited old file would otherwise steal the badge.
+        let latest: string | undefined
+        try {
+          latest = parseLatestPointer(await readDocument(dir, 'latest.md'))
+        } catch {
+          latest = undefined
+        }
+        return ok({ dir, latest, docs })
       } catch (error) {
         return errorResponse(error)
       }
